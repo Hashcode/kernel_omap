@@ -460,6 +460,7 @@ static void hdmi_compute_pll(struct omap_dss_device *dssdev, int phy,
 		struct hdmi_pll_info *pi)
 {
 	unsigned long clkin, refclk;
+	enum omapdss_version version = omapdss_get_version();
 	u32 mf;
 
 	clkin = clk_get_rate(hdmi.sys_clk) / 10000;
@@ -472,7 +473,24 @@ static void hdmi_compute_pll(struct omap_dss_device *dssdev, int phy,
 
 	refclk = clkin / pi->regn;
 
-	pi->regm2 = HDMI_DEFAULT_REGM2;
+	switch (version)
+	{
+	case OMAPDSS_VER_OMAP4430_ES1:
+	case OMAPDSS_VER_OMAP4430_ES2:
+	case OMAPDSS_VER_OMAP4:
+		pi->regm2 = HDMI_DEFAULT_REGM2;
+		break;
+	case OMAPDSS_VER_OMAP5:
+		if (phy <= 50000)
+			pi->regm2 = 2;
+		else
+			pi->regm2 = 1;
+		break;
+	default:
+		DSSWARN("invalid omapdss version");
+		break;
+
+	}
 
 	/*
 	 * multiplier is pixel_clk/ref_clk
