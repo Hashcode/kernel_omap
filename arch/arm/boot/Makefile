@@ -68,6 +68,9 @@ $(obj)/zImage-dtb:	$(obj)/zImage $(DTB_OBJS) FORCE
 	$(call if_changed,cat)
 	@echo '  Kernel: $@ is ready'
 
+$(obj)/zImage-dtb.%:	$(obj)/dts/%.dtb $(obj)/zImage
+	cat $(obj)/zImage $< > $@
+
 endif
 
 ifneq ($(LOADADDR),)
@@ -92,6 +95,10 @@ $(obj)/uImage:	$(obj)/zImage FORCE
 	@$(check_for_multiple_loadaddr)
 	$(call if_changed,uimage)
 	@$(kecho) '  Image $@ is ready'
+
+$(obj)/uImage.%:	$(obj)/zImage-dtb.% FORCE
+	$(call if_changed,uimage)
+	@echo '  Image $@ is ready'
 
 $(obj)/bootp/bootp: $(obj)/zImage initrd FORCE
 	$(Q)$(MAKE) $(build)=$(obj)/bootp $@
