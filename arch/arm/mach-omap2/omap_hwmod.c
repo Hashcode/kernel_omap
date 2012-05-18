@@ -3718,7 +3718,9 @@ struct powerdomain *omap_hwmod_get_pwrdm(struct omap_hwmod *oh)
 	if (oh->clkdm)
 		return oh->clkdm->pwrdm.ptr;
 
-	if (oh->_clk) {
+	if (oh->clkdm) {
+		return oh->clkdm->pwrdm.ptr;
+	} else if (oh->_clk) {
 		c = oh->_clk;
 	} else {
 		oi = _find_mpu_rt_port(oh);
