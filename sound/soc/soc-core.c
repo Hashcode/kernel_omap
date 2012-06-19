@@ -4302,7 +4302,6 @@ found:
 }
 EXPORT_SYMBOL_GPL(snd_soc_unregister_codec);
 
-
 /**
  * snd_soc_register_component - Register a component with the ASoC core
  *
@@ -4387,6 +4386,38 @@ found:
 	kfree(cmpnt->name);
 }
 EXPORT_SYMBOL_GPL(snd_soc_unregister_component);
+
+int snd_soc_card_new_dai_links(struct snd_soc_card *card,
+	struct snd_soc_dai_link *new, int count)
+{
+	struct snd_soc_dai_link *links;
+	size_t bytes;
+
+	bytes = (count + card->num_links) * sizeof(struct snd_soc_dai_link);
+	links = devm_kzalloc(card->dev, bytes, GFP_KERNEL);
+	if (!links)
+		return -ENOMEM;
+
+	if (card->dai_link) {
+		memcpy(links, card->dai_link,
+			card->num_links * sizeof(struct snd_soc_dai_link));
+		devm_kfree(card->dev, card->dai_link);
+	}
+	memcpy(links + card->num_links, new,
+		count * sizeof(struct snd_soc_dai_link));
+	card->dai_link = links;
+	card->num_links += count;
+
+	return 0;
+}
+EXPORT_SYMBOL_GPL(snd_soc_card_new_dai_links);
+
+void snd_soc_card_reset_dai_links(struct snd_soc_card *card)
+{
+	card->dai_link = NULL;
+	card->num_links = 0;
+}
+EXPORT_SYMBOL_GPL(snd_soc_card_reset_dai_links);
 
 /* Retrieve a card's name from device tree */
 int snd_soc_of_parse_card_name(struct snd_soc_card *card,

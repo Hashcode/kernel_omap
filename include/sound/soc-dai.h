@@ -113,6 +113,8 @@ struct snd_soc_dai_driver;
 struct snd_soc_dai;
 struct snd_ac97_bus_ops;
 
+void snd_soc_card_reset_dai_links(struct snd_soc_card *card);
+
 /* Digital Audio Interface clocking API.*/
 int snd_soc_dai_set_sysclk(struct snd_soc_dai *dai, int clk_id,
 	unsigned int freq, int dir);
