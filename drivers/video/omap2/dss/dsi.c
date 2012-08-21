@@ -38,6 +38,7 @@
 #include <linux/slab.h>
 #include <linux/debugfs.h>
 #include <linux/pm_runtime.h>
+#include <linux/of.h>
 
 #include <video/omapdss.h>
 #include <video/mipi_display.h>
@@ -5442,6 +5443,62 @@ static int dsi_probe_pdata(struct platform_device *dsidev)
 	return 0;
 }
 
+static void __init dsi_probe_of(struct platform_device *pdev)
+{
+	struct dsi_data *dsi = dsi_get_dsidrv_data(pdev);
+	struct device_node *node = pdev->dev.of_node;
+	struct device_node *child;
+	struct omap_dss_device *dssdev;
+	u32 v;
+	enum omap_channel channel;
+	int r;
+
+	child = of_get_next_available_child(node, NULL);
+
+	if (!child)
+		return;
+
+	r = of_property_read_u32(node, "video-source", &v);
+	if (r) {
+		DSSERR("parsing channel failed\n");
+		return;
+	}
+
+	channel = v;
+
+	dssdev = dss_alloc_and_init_device(&pdev->dev);
+	if (!dssdev)
+		return;
+
+	dssdev->dev.of_node = child;
+	dssdev->type = OMAP_DISPLAY_TYPE_DSI;
+	dssdev->name = child->name;
+	dssdev->channel = channel;
+	dssdev->phy.dsi.module = dsi->module_id;
+
+	r = dsi_init_display(dssdev);
+	if (r) {
+		DSSERR("device %s init failed: %d\n", dssdev->name, r);
+		dss_put_device(dssdev);
+		return;
+	}
+
+	r = omapdss_output_set_device(&dsi->output, dssdev);
+	if (r) {
+		DSSERR("failed to connect output to new device: %s\n",
+				dssdev->name);
+		dss_put_device(dssdev);
+		return;
+	}
+
+	r = dss_add_device(dssdev);
+	if (r) {
+		DSSERR("dss_add_device failed %d\n", r);
+		dss_put_device(dssdev);
+		return;
+	}
+}
+
 static void dsi_init_output(struct platform_device *dsidev)
 {
 	struct dsi_data *dsi = dsi_get_dsidrv_data(dsidev);
@@ -5478,7 +5535,19 @@ static int omap_dsihw_probe(struct platform_device *dsidev)
 	if (!dsi)
 		return -ENOMEM;
 
-	dsi->module_id = dsidev->id;
+	if (dsidev->dev.of_node) {
+		u32 id;
+		r = of_property_read_u32(dsidev->dev.of_node, "reg", &id);
+		if (r) {
+			DSSERR("failed to read DSI module ID\n");
+			return r;
+		}
+
+		dsi->module_id = id;
+	} else {
+		dsi->module_id = dsidev->id;
+	}
+
 	dsi->pdev = dsidev;
 	dev_set_drvdata(&dsidev->dev, dsi);
 
@@ -5563,14 +5632,6 @@ static int omap_dsihw_probe(struct platform_device *dsidev)
 
 	dsi_init_output(dsidev);
 
-	r = dsi_probe_pdata(dsidev);
-	if (r) {
-		dsi_runtime_put(dsidev);
-		dsi_uninit_output(dsidev);
-		pm_runtime_disable(&dsidev->dev);
-		return r;
-	}
-
 	dsi_runtime_put(dsidev);
 
 	if (dsi->module_id == 0)
@@ -5584,6 +5645,19 @@ static int omap_dsihw_probe(struct platform_device *dsidev)
 	else if (dsi->module_id == 1)
 		dss_debugfs_create_file("dsi2_irqs", dsi2_dump_irqs);
 #endif
+
+	if (dsidev->dev.of_node)
+		dsi_probe_of(dsidev);
+	else if (dsidev->dev.platform_data) {
+		r = dsi_probe_pdata(dsidev);
+		if (r) {
+			dsi_runtime_put(dsidev);
+			dsi_uninit_output(dsidev);
+			pm_runtime_disable(&dsidev->dev);
+			return r;
+		}
+	}
+
 	return 0;
 
 err_runtime_get:
@@ -5639,6 +5713,17 @@ static const struct dev_pm_ops dsi_pm_ops = {
 	.runtime_resume = dsi_runtime_resume,
 };
 
+#if defined(CONFIG_OF)
+static const struct of_device_id dsi_of_match[] = {
+	{
+		.compatible = "ti,omap4-dsi",
+	},
+	{},
+};
+#else
+#define dsi_of_match NULL
+#endif
+
 static struct platform_driver omap_dsihw_driver = {
 	.probe		= omap_dsihw_probe,
 	.remove         = __exit_p(omap_dsihw_remove),
@@ -5646,6 +5731,7 @@ static struct platform_driver omap_dsihw_driver = {
 		.name   = "omapdss_dsi",
 		.owner  = THIS_MODULE,
 		.pm	= &dsi_pm_ops,
+		.of_match_table = dsi_of_match,
 	},
 };
 
