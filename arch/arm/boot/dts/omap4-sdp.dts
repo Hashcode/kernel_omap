@@ -184,6 +184,14 @@
 			0x14 0x2        /* fref_clk0_out.sys_drm_msecure OUTPUT | MODE2 */
 		>;
 	};
+
+	sound_hdmi {
+		compatible = "ti,omap-hdmi-tpd12s015-audio";
+		ti,model = "OMAP4HDMI";
+
+		ti,hdmi_audio = <&hdmi>;
+		ti,level_shifter = <&tpd12s015>;
+	};
 };
 
 &omap4_pmx_core {
@@ -604,7 +612,7 @@
 };
 
 &hdmi {
-	tpd12s015 {
+	tpd12s015: tpd12s015 {
 		compatible = "ti,tpd12s015";
 
 		gpios = <&gpio2 28 0>,	/* 60, CT CP HPD */
