@@ -743,6 +743,13 @@ extern int __build_bug_on_failed;
 #define COMPACTION_BUILD 0
 #endif
 
+/* This helps us to avoid #ifdef CONFIG_SYMBOL_PREFIX */
+#ifdef CONFIG_SYMBOL_PREFIX
+#define SYMBOL_PREFIX CONFIG_SYMBOL_PREFIX
+#else
+#define SYMBOL_PREFIX ""
+#endif
+
 /* Rebuild everything on CONFIG_FTRACE_MCOUNT_RECORD */
 #ifdef CONFIG_FTRACE_MCOUNT_RECORD
 # define REBUILD_DUE_TO_FTRACE_MCOUNT_RECORD
