@@ -86,7 +86,7 @@ static const struct snd_soc_fw_kcontrol_ops io_ops[] = {
 	{SOC_CONTROL_IO_ENUM, snd_soc_get_enum_double,
 		snd_soc_put_enum_double, snd_soc_info_enum_double},
 	{SOC_CONTROL_IO_ENUM_EXT, NULL,
-		NULL, snd_soc_info_enum_ext},
+		NULL, snd_soc_info_enum_double},
 	{SOC_CONTROL_IO_BYTES, snd_soc_bytes_get,
 		snd_soc_bytes_put, snd_soc_bytes_info},
 	{SOC_CONTROL_IO_BOOL_EXT, NULL,
