@@ -98,6 +98,8 @@ static int omap2_enter_full_retention(void)
 
 	omap2_gpio_prepare_for_idle(0);
 
+	pwrdm_pre_transition(NULL);
+
 	/* One last check for pending IRQs to avoid extra latency due
 	 * to sleeping unnecessarily. */
 	if (omap_irq_pending())
@@ -109,6 +111,8 @@ static int omap2_enter_full_retention(void)
 			   OMAP_SDRC_REGADDR(SDRC_POWER));
 
 no_sleep:
+	pwrdm_post_transition(NULL);
+
 	omap2_gpio_resume_after_idle();
 
 	clk_enable(osc_ck);
@@ -180,8 +184,12 @@ static void omap2_enter_mpu_retention(void)
 		WARN_ON(pwrdm_set_next_fpwrst(mpu_pwrdm, PWRDM_FUNC_PWRST_ON));
 	}
 
+	pwrdm_pre_transition(mpu_pwrdm);
+
 	/* WFI */
 	asm("mcr p15, 0, %0, c7, c0, 4" : : "r" (zero) : "memory", "cc");
+
+	pwrdm_post_transition(mpu_pwrdm);
 
 	WARN_ON(pwrdm_set_next_fpwrst(mpu_pwrdm, PWRDM_FUNC_PWRST_ON));
 }
