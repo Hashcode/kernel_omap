@@ -242,19 +242,10 @@ struct voltagedomain *pwrdm_get_voltdm(struct powerdomain *pwrdm);
 
 int pwrdm_get_mem_bank_count(struct powerdomain *pwrdm);
 
-int pwrdm_set_next_pwrst(struct powerdomain *pwrdm, u8 pwrst);
-int pwrdm_read_next_pwrst(struct powerdomain *pwrdm);
-int pwrdm_read_pwrst(struct powerdomain *pwrdm);
-int pwrdm_read_prev_pwrst(struct powerdomain *pwrdm);
 int pwrdm_clear_all_prev_pwrst(struct powerdomain *pwrdm);
 
-int pwrdm_set_logic_retst(struct powerdomain *pwrdm, u8 pwrst);
 int pwrdm_set_mem_onst(struct powerdomain *pwrdm, u8 bank, u8 pwrst);
 int pwrdm_set_mem_retst(struct powerdomain *pwrdm, u8 bank, u8 pwrst);
-
-int pwrdm_read_logic_pwrst(struct powerdomain *pwrdm);
-int pwrdm_read_prev_logic_pwrst(struct powerdomain *pwrdm);
-int pwrdm_read_logic_retst(struct powerdomain *pwrdm);
 int pwrdm_read_mem_pwrst(struct powerdomain *pwrdm, u8 bank);
 int pwrdm_read_prev_mem_pwrst(struct powerdomain *pwrdm, u8 bank);
 int pwrdm_read_mem_retst(struct powerdomain *pwrdm, u8 bank);
@@ -269,8 +260,6 @@ int pwrdm_pre_transition(struct powerdomain *pwrdm);
 int pwrdm_post_transition(struct powerdomain *pwrdm);
 int pwrdm_get_context_loss_count(struct powerdomain *pwrdm);
 bool pwrdm_can_ever_lose_context(struct powerdomain *pwrdm);
-
-extern int omap_set_pwrdm_state(struct powerdomain *pwrdm, u8 state);
 
 extern const char *pwrdm_convert_fpwrst_to_name(u8 fpwrst);
 extern int pwrdm_set_next_fpwrst(struct powerdomain *pwrdm, u8 fpwrst);
