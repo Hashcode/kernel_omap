@@ -381,7 +381,7 @@ static int _pwrdm_pwrst_to_fpwrst(struct powerdomain *pwrdm, u8 pwrst, u8 logic,
  * software-controllable, returns 0; otherwise, passes along the
  * return value from pwrdm_set_logic_retst() if there is an error
  * returned by that function, otherwise, passes along the return value
- * from pwrdm_set_next_pwrst()
+ * from pwrdm_set_next_fpwrst()
  */
 static int _set_logic_retst_and_pwrdm_pwrst(struct powerdomain *pwrdm,
 					    u8 logic, u8 pwrst)
@@ -431,6 +431,9 @@ static int _pwrdm_read_next_fpwrst(struct powerdomain *pwrdm)
 	int next_pwrst, next_logic, ret;
 	u8 fpwrst;
 
+	if (pwrdm->_flags & _PWRDM_NEXT_FPWRST_IS_VALID)
+		return pwrdm->next_fpwrst;
+
 	next_pwrst = arch_pwrdm->pwrdm_read_next_pwrst(pwrdm);
 	if (next_pwrst < 0)
 		return next_pwrst;
@@ -443,6 +446,10 @@ static int _pwrdm_read_next_fpwrst(struct powerdomain *pwrdm)
 			return next_logic;
 	}
 	ret = _pwrdm_pwrst_to_fpwrst(pwrdm, next_pwrst, next_logic, &fpwrst);
+	if (!ret) {
+		pwrdm->next_fpwrst = fpwrst;
+		pwrdm->_flags |= _PWRDM_NEXT_FPWRST_IS_VALID;
+	}
 
 	return (ret) ? ret : fpwrst;
 }
@@ -668,7 +675,7 @@ static int _pwrdm_pre_transition_cb(struct powerdomain *pwrdm, void *unused)
  */
 static int _pwrdm_post_transition_cb(struct powerdomain *pwrdm, void *unused)
 {
-	int prev, next, fpwrst;
+	int prev, fpwrst;
 	int trace_state = 0;
 
 	prev = _pwrdm_read_prev_fpwrst(pwrdm);
@@ -681,10 +688,9 @@ static int _pwrdm_post_transition_cb(struct powerdomain *pwrdm, void *unused)
 	 * If the power domain did not hit the desired state,
 	 * generate a trace event with both the desired and hit states
 	 */
-	next = _pwrdm_read_next_fpwrst(pwrdm);
-	if (next != prev) {
-		trace_state = (PWRDM_TRACE_STATES_FLAG | next << 8 |
-			       prev);
+	if (pwrdm->next_fpwrst != prev) {
+		trace_state = (PWRDM_TRACE_STATES_FLAG |
+			       pwrdm->next_fpwrst << 8 | prev);
 		trace_power_domain_target(pwrdm->name, trace_state,
 					  smp_processor_id());
 	}
@@ -1261,6 +1267,10 @@ int pwrdm_set_next_fpwrst(struct powerdomain *pwrdm, u8 fpwrst)
 	if (ret)
 		return ret;
 
+	if (pwrdm->_flags & _PWRDM_NEXT_FPWRST_IS_VALID &&
+	    pwrdm->next_fpwrst == fpwrst)
+		return 0;
+
 	pr_debug("%s: set fpwrst %0x to pwrdm %s\n", __func__, fpwrst,
 		 pwrdm->name);
 
@@ -1269,6 +1279,10 @@ int pwrdm_set_next_fpwrst(struct powerdomain *pwrdm, u8 fpwrst)
 
 	pwrdm_lock(pwrdm);
 	ret = _set_logic_retst_and_pwrdm_pwrst(pwrdm, logic, pwrst);
+	if (!ret) {
+		pwrdm->next_fpwrst = fpwrst;
+		pwrdm->_flags |= _PWRDM_NEXT_FPWRST_IS_VALID;
+	}
 	pwrdm_unlock(pwrdm);
 
 	return ret;
@@ -1284,36 +1298,16 @@ int pwrdm_set_next_fpwrst(struct powerdomain *pwrdm, u8 fpwrst)
  */
 int pwrdm_read_next_fpwrst(struct powerdomain *pwrdm)
 {
-	int next_pwrst, next_logic, ret;
-	u8 fpwrst;
+	int ret;
 
-	if (!arch_pwrdm)
+	if (!pwrdm)
 		return -EINVAL;
 
 	pwrdm_lock(pwrdm);
-
-	next_pwrst = arch_pwrdm->pwrdm_read_next_pwrst(pwrdm);
-	if (next_pwrst < 0) {
-		ret = next_pwrst;
-		goto prnf_out;
-	}
-
-	next_logic = next_pwrst;
-	if (_pwrdm_logic_retst_can_change(pwrdm) &&
-	    arch_pwrdm->pwrdm_read_logic_pwrst) {
-		next_logic = arch_pwrdm->pwrdm_read_logic_pwrst(pwrdm);
-		if (next_logic < 0) {
-			ret = next_logic;
-			goto prnf_out;
-		}
-	}
-
-	ret = _pwrdm_pwrst_to_fpwrst(pwrdm, next_pwrst, next_logic, &fpwrst);
-
-prnf_out:
+	ret = _pwrdm_read_next_fpwrst(pwrdm);
 	pwrdm_unlock(pwrdm);
 
-	return (ret) ? ret : fpwrst;
+	return ret;
 }
 
 /**
@@ -1349,10 +1343,6 @@ int pwrdm_set_fpwrst(struct powerdomain *pwrdm, enum pwrdm_func_state fpwrst)
 
 	pwrdm_lock(pwrdm);
 
-	/*
-	 * XXX quite heavyweight for what this is intended to do; the
-	 * next fpwrst should simply be cached
-	 */
 	next_fpwrst = _pwrdm_read_next_fpwrst(pwrdm);
 	if (next_fpwrst == fpwrst)
 		goto psf_out;
@@ -1369,9 +1359,13 @@ int pwrdm_set_fpwrst(struct powerdomain *pwrdm, enum pwrdm_func_state fpwrst)
 	}
 
 	ret = _set_logic_retst_and_pwrdm_pwrst(pwrdm, logic, pwrst);
-	if (ret)
+	if (ret) {
 		pr_err("%s: unable to set power state of powerdomain: %s\n",
 		       __func__, pwrdm->name);
+	} else {
+		pwrdm->next_fpwrst = fpwrst;
+		pwrdm->_flags |= _PWRDM_NEXT_FPWRST_IS_VALID;
+	}
 
 	_pwrdm_restore_clkdm_state(pwrdm, sleep_switch, hwsup);
 
