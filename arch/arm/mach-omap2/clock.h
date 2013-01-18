@@ -101,13 +101,31 @@ struct clockdomain;
 	};							\
 	DEFINE_STRUCT_CLK(_name, _parent_names, _ops);
 
+
+#define DEFINE_CLK_OMAP_HSDIVIDER63(_name, _parent_name,	\
+				_parent_ptr, _flags,		\
+				_clksel_reg, _clksel_mask)	\
+								\
+	_DEFINE_CLK_OMAP_HSDIVIDER(_name, _parent_name,		\
+				_parent_ptr, _flags,		\
+				_clksel_reg, _clksel_mask, 63)
+
 #define DEFINE_CLK_OMAP_HSDIVIDER(_name, _parent_name,		\
 				_parent_ptr, _flags,		\
 				_clksel_reg, _clksel_mask)	\
+								\
+	_DEFINE_CLK_OMAP_HSDIVIDER(_name, _parent_name,		\
+				_parent_ptr, _flags,		\
+				_clksel_reg, _clksel_mask, 31)
+
+
+#define _DEFINE_CLK_OMAP_HSDIVIDER(_name, _parent_name,		\
+				_parent_ptr, _flags,		\
+				_clksel_reg, _clksel_mask, mdiv)\
 	static const struct clksel _name##_div[] = {		\
 		{						\
 			.parent = _parent_ptr,			\
-			.rates = div31_1to31_rates		\
+			.rates = div##mdiv##_1to##mdiv##_rates	\
 		},						\
 		{ .parent = NULL },				\
 	};							\
@@ -137,6 +155,7 @@ struct clockdomain;
 #define RATE_IN_4460		(1 << 7)
 #define RATE_IN_AM33XX		(1 << 8)
 #define RATE_IN_TI814X		(1 << 9)
+#define RATE_IN_54XX		(1 << 10)
 
 #define RATE_IN_24XX		(RATE_IN_242X | RATE_IN_243X)
 #define RATE_IN_34XX		(RATE_IN_3430ES1 | RATE_IN_3430ES2PLUS)
@@ -457,6 +476,7 @@ extern const struct clksel_rate div_1_2_rates[];
 extern const struct clksel_rate div_1_3_rates[];
 extern const struct clksel_rate div_1_4_rates[];
 extern const struct clksel_rate div31_1to31_rates[];
+extern const struct clksel_rate div63_1to63_rates[];
 
 extern int am33xx_clk_init(void);
 
