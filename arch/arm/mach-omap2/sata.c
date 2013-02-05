@@ -139,7 +139,7 @@ static inline u32 omap_sata_readl(void __iomem *base, u32 reg)
 	return __raw_readl(base + reg);
 }
 
-static void __init sataphy_pwr_init(void)
+static void sataphy_pwr_init(void)
 {
 	sataphy_pwr = ioremap(OMAP_CTRL_MODULE_CORE,
 			      OMAP_CTRL_MODULE_CORE_SIZE);
@@ -325,7 +325,7 @@ static struct resource *ocp2scp_get_resource_bynme(struct omap_ocp2scp_dev *dev,
 	return NULL;
 }
 
-static int __init sata_phy_init(struct device *dev)
+static int sata_phy_init(struct device *dev)
 {
 	struct resource			*res;
 	struct platform_device		*pdev;
@@ -438,7 +438,7 @@ static void sata_phy_exit(struct device *dev)
 	sataphy_pwr_deinit();
 }
 
-static int __init omap_ahci_plat_init(struct device *dev, void __iomem *base)
+static int omap_ahci_plat_init(struct device *dev, void __iomem *base)
 {
 	pm_runtime_enable(dev);
 	pm_runtime_get_sync(dev);
