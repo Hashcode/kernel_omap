@@ -19,6 +19,8 @@
 
 #include <asm/mach/arch.h>
 
+#include <plat/sata.h>
+
 #include "common.h"
 #include "common-board-devices.h"
 #include "dss-common.h"
@@ -63,6 +65,8 @@ static void __init omap_generic_init(void)
 		legacy_init_ehci_clk("auxclk3_ck");
 	else if (of_machine_is_compatible("ti,omap5-uevm"))
 		legacy_init_ehci_clk("auxclk1_ck");
+	else if (of_machine_is_compatible("ti,omap5"))
+		omap_sata_init();
 }
 
 #ifdef CONFIG_SOC_OMAP2420
