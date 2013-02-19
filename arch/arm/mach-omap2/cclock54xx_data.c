@@ -1266,6 +1266,7 @@ static struct omap_clk omap54xx_clks[] = {
 	CLK(NULL,	"l3_iclk_div",			&l3_iclk_div),
 	CLK(NULL,	"gpu_l3_iclk",			&gpu_l3_iclk),
 	CLK(NULL,	"l3init_60m_fclk",		&l3init_60m_fclk),
+	CLK(NULL,	"init_60m_fclk",		&l3init_60m_fclk),
 	CLK(NULL,	"wkupaon_iclk_mux",		&wkupaon_iclk_mux),
 	CLK(NULL,	"l3instr_ts_gclk_div",		&l3instr_ts_gclk_div),
 	CLK(NULL,	"l4_root_clk_div",		&l4_root_clk_div),
