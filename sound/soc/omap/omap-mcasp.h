@@ -29,7 +29,6 @@ struct omap_mcasp {
 	spinlock_t lock;
 	struct clk *fclk;
 	int irq;
-	unsigned int dma_req;
 	unsigned int stream_rate;
 };
 

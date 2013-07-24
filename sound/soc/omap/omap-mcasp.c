@@ -610,13 +610,7 @@ static int asoc_mcasp_probe(struct platform_device *pdev)
 
 	spin_lock_init(&mcasp->lock);
 
-	res = platform_get_resource_byname(pdev, IORESOURCE_DMA, "axevt");
-	if (!res) {
-		dev_err(&pdev->dev, "no DMA resource\n");
-		return -ENODEV;
-	}
-	mcasp->dma_req = res->start;
-	omap_mcasp_dai_dma_params[0].filter_data = &mcasp->dma_req;
+	omap_mcasp_dai_dma_params[0].filter_data = "axevt";
 
 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 	if (!res) {
