@@ -84,6 +84,8 @@ struct omap_aess_debug {
 	struct dentry *d_dmem;
 };
 
+/* TODO: Need to move to dmaengine API */
+#if 0
 static int aess_dbg_get_dma_pos(struct omap_aess *aess)
 {
 	struct omap_aess_debug *debug = aess->debug;
@@ -309,6 +311,23 @@ static ssize_t aess_read_data(struct file *file, char __user *user_buf,
 
 	return ret;
 }
+#else /* legacy DMA code */
+static int aess_open_data(struct inode *inode, struct file *file)
+{
+	return 0;
+}
+
+static ssize_t aess_read_data(struct file *file, char __user *user_buf,
+			      size_t count, loff_t *ppos)
+{
+	return 0;
+}
+
+static int aess_release_data(struct inode *inode, struct file *file)
+{
+	return 0;
+}
+#endif /* legacy DMA code */
 
 static const struct file_operations omap_aess_fops = {
 	.open = aess_open_data,
