@@ -63,7 +63,6 @@ struct omap_aess_debug {
 	size_t dma_offset;
 	int complete;
 	char *buffer;
-	struct omap_pcm_dma_data *dma_data;
 	int dma_ch;
 	int dma_req;
 
