@@ -167,48 +167,6 @@ static void aess_dbg_stop_dma(struct omap_aess *aess)
 	pm_runtime_put_sync(aess->dev);
 }
 
-static int aess_open_data(struct inode *inode, struct file *file)
-{
-	struct omap_aess *aess = inode->i_private;
-	struct omap_aess_debug *debug = aess->debug;
-
-	/* adjust debug word size based on any user params */
-	if (debug->format1)
-		debug->elem_bytes += OMAP_AESS_DBG_FLAG1_SIZE;
-	if (debug->format2)
-		debug->elem_bytes += OMAP_AESS_DBG_FLAG2_SIZE;
-	if (debug->format3)
-		debug->elem_bytes += OMAP_AESS_DBG_FLAG3_SIZE;
-
-	debug->buffer_bytes = debug->elem_bytes * 4 * debug->buffer_msecs;
-
-	debug->buffer = dma_alloc_writecombine(aess->dev, debug->buffer_bytes,
-					       &debug->buffer_addr, GFP_KERNEL);
-	if (debug->buffer == NULL) {
-		dev_err(aess->dev, "can't alloc %d bytes for trace DMA buffer\n",
-			debug->buffer_bytes);
-		return -ENOMEM;
-	}
-
-	file->private_data = inode->i_private;
-	debug->complete = 0;
-	aess_dbg_start_dma(aess, debug->circular);
-
-	return 0;
-}
-
-static int aess_release_data(struct inode *inode, struct file *file)
-{
-	struct omap_aess *aess = inode->i_private;
-	struct omap_aess_debug *debug = aess->debug;
-
-	aess_dbg_stop_dma(aess);
-
-	dma_free_writecombine(aess->dev, debug->buffer_bytes, debug->buffer,
-			      debug->buffer_addr);
-	return 0;
-}
-
 static ssize_t aess_copy_to_user(struct omap_aess *aess, char __user *user_buf,
 				 size_t count)
 {
@@ -311,7 +269,7 @@ static ssize_t aess_read_data(struct file *file, char __user *user_buf,
 	return ret;
 }
 #else /* legacy DMA code */
-static int aess_open_data(struct inode *inode, struct file *file)
+static int aess_dbg_start_dma(struct omap_aess *aess, int circular)
 {
 	return 0;
 }
@@ -322,11 +280,52 @@ static ssize_t aess_read_data(struct file *file, char __user *user_buf,
 	return 0;
 }
 
-static int aess_release_data(struct inode *inode, struct file *file)
+static void aess_dbg_stop_dma(struct omap_aess *aess)
 {
-	return 0;
 }
 #endif /* legacy DMA code */
+
+static int aess_open_data(struct inode *inode, struct file *file)
+{
+	struct omap_aess *aess = inode->i_private;
+	struct omap_aess_debug *debug = aess->debug;
+
+	/* adjust debug word size based on any user params */
+	if (debug->format1)
+		debug->elem_bytes += OMAP_AESS_DBG_FLAG1_SIZE;
+	if (debug->format2)
+		debug->elem_bytes += OMAP_AESS_DBG_FLAG2_SIZE;
+	if (debug->format3)
+		debug->elem_bytes += OMAP_AESS_DBG_FLAG3_SIZE;
+
+	debug->buffer_bytes = debug->elem_bytes * 4 * debug->buffer_msecs;
+
+	debug->buffer = dma_alloc_writecombine(aess->dev, debug->buffer_bytes,
+					       &debug->buffer_addr, GFP_KERNEL);
+	if (debug->buffer == NULL) {
+		dev_err(aess->dev, "can't alloc %d bytes for trace DMA buffer\n",
+			debug->buffer_bytes);
+		return -ENOMEM;
+	}
+
+	file->private_data = inode->i_private;
+	debug->complete = 0;
+	aess_dbg_start_dma(aess, debug->circular);
+
+	return 0;
+}
+
+static int aess_release_data(struct inode *inode, struct file *file)
+{
+	struct omap_aess *aess = inode->i_private;
+	struct omap_aess_debug *debug = aess->debug;
+
+	aess_dbg_stop_dma(aess);
+
+	dma_free_writecombine(aess->dev, debug->buffer_bytes, debug->buffer,
+			      debug->buffer_addr);
+	return 0;
+}
 
 static const struct file_operations omap_aess_fops = {
 	.open = aess_open_data,
