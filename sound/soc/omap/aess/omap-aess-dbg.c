@@ -31,6 +31,7 @@
 #include <linux/platform_device.h>
 #include <linux/pm_runtime.h>
 #include <linux/dma-mapping.h>
+#include <linux/dmaengine.h>
 #include <linux/debugfs.h>
 
 #include <linux/omap-dma.h>
@@ -43,6 +44,8 @@
 #define OMAP_AESS_DBG_FLAG1_SIZE	0
 #define OMAP_AESS_DBG_FLAG2_SIZE	0
 #define OMAP_AESS_DBG_FLAG3_SIZE	0
+
+#define OMAP_AESS_DBG_DMA_NAME		"fifo7"
 
 #ifdef CONFIG_DEBUG_FS
 
@@ -65,6 +68,7 @@ struct omap_aess_debug {
 	char *buffer;
 	int dma_ch;
 	int dma_req;
+	struct dma_chan *chan;
 
 	/* debugfs */
 	struct dentry *test_root;
@@ -271,6 +275,20 @@ static ssize_t aess_read_data(struct file *file, char __user *user_buf,
 #else /* legacy DMA code */
 static int aess_dbg_start_dma(struct omap_aess *aess, int circular)
 {
+	struct omap_aess_debug *debug = aess->debug;
+
+	if (debug->chan) {
+		dev_err(aess->dev, "debug DMA already in use\n");
+		return -EBUSY;
+	}
+
+	debug->chan = dma_request_slave_channel(aess->dev,
+						OMAP_AESS_DBG_DMA_NAME);
+	if (!debug->chan) {
+		dev_err(aess->dev, "Failed to request debug DMA\n");
+		return -ENODEV;
+	}
+
 	return 0;
 }
 
@@ -282,6 +300,13 @@ static ssize_t aess_read_data(struct file *file, char __user *user_buf,
 
 static void aess_dbg_stop_dma(struct omap_aess *aess)
 {
+	struct omap_aess_debug *debug = aess->debug;
+
+	if (!debug->chan)
+		return;
+
+	dma_release_channel(debug->chan);
+	debug->chan = NULL;
 }
 #endif /* legacy DMA code */
 
