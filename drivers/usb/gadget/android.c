@@ -596,7 +596,8 @@ rndis_function_bind_config(struct android_usb_function *f,
 		rndis->ethaddr[0], rndis->ethaddr[1], rndis->ethaddr[2],
 		rndis->ethaddr[3], rndis->ethaddr[4], rndis->ethaddr[5]);
 
-	dev = gether_setup_name(c->cdev->gadget, rndis->ethaddr, "rndis");
+/*FIXME: Need to look into parameters dev_addr, host_addr and qmult as per new api */
+	dev = gether_setup_name(c->cdev->gadget, NULL, NULL, rndis->ethaddr, 5, "rndis");
 	if (IS_ERR(dev)) {
 		ret = PTR_ERR(dev);
 		pr_err("%s: gether_setup failed\n", __func__);
@@ -754,6 +755,9 @@ struct mass_storage_function_config {
 static int mass_storage_function_init(struct android_usb_function *f,
 					struct usb_composite_dev *cdev)
 {
+/*FIXME: Needs to be re-implemented */
+	return -EINVAL;
+#if 0
 	struct mass_storage_function_config *config;
 	struct fsg_common *common;
 	int err;
@@ -783,6 +787,7 @@ static int mass_storage_function_init(struct android_usb_function *f,
 	config->common = common;
 	f->config = config;
 	return 0;
+#endif
 }
 
 static void mass_storage_function_cleanup(struct android_usb_function *f)
@@ -794,8 +799,12 @@ static void mass_storage_function_cleanup(struct android_usb_function *f)
 static int mass_storage_function_bind_config(struct android_usb_function *f,
 						struct usb_configuration *c)
 {
+/*FIXME: Needs to be re-implemented */
+/*
 	struct mass_storage_function_config *config = f->config;
 	return fsg_bind_config(c->cdev, c, config->common);
+*/
+	return -EINVAL;
 }
 
 static ssize_t mass_storage_inquiry_show(struct device *dev,
