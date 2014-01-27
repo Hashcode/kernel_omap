@@ -1967,7 +1967,7 @@ static int mmc_blk_issue_rq(struct mmc_queue *mq, struct request *req)
 
 #ifdef CONFIG_MMC_BLOCK_DEFERRED_RESUME
 	if (mmc_bus_needs_resume(card->host))
-		mmc_resume_bus(card->host);
+		mmc_resume_bus(card->host, card->ocr);
 #endif
 
 	if (req && !mq->mqrq_prev->req)

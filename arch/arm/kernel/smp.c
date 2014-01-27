@@ -530,7 +530,6 @@ static void ipi_cpu_stop(unsigned int cpu)
 		cpu_relax();
 }
 
-<<<<<<< HEAD
 static DEFINE_PER_CPU(struct completion *, cpu_completion);
 
 int register_ipi_completion(struct completion *completion, int cpu)
@@ -542,7 +541,8 @@ int register_ipi_completion(struct completion *completion, int cpu)
 static void ipi_complete(unsigned int cpu)
 {
 	complete(per_cpu(cpu_completion, cpu));
-=======
+}
+
 static cpumask_t backtrace_mask;
 static DEFINE_RAW_SPINLOCK(backtrace_lock);
 
@@ -593,7 +593,6 @@ static void ipi_cpu_backtrace(unsigned int cpu, struct pt_regs *regs)
 		raw_spin_unlock(&backtrace_lock);
 		cpu_clear(cpu, backtrace_mask);
 	}
->>>>>>> ARM: smp: implement arch_trigger_all_cpus_backtrace using IPI
 }
 
 /*
@@ -646,7 +645,6 @@ void handle_IPI(int ipinr, struct pt_regs *regs)
 		irq_exit();
 		break;
 
-<<<<<<< HEAD
 #ifdef CONFIG_IRQ_WORK
 	case IPI_IRQ_WORK:
 		irq_enter();
@@ -659,10 +657,10 @@ void handle_IPI(int ipinr, struct pt_regs *regs)
 		irq_enter();
 		ipi_complete(cpu);
 		irq_exit();
-=======
+		break;
+
 	case IPI_CPU_BACKTRACE:
 		ipi_cpu_backtrace(cpu, regs);
->>>>>>> ARM: smp: implement arch_trigger_all_cpus_backtrace using IPI
 		break;
 
 	default:

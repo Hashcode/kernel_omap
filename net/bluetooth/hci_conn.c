@@ -725,9 +725,6 @@ struct hci_conn *hci_connect(struct hci_dev *hdev, int type,
 		return hci_connect_le(hdev, dst, dst_type, sec_level, auth_type);
 	case ACL_LINK:
 		return hci_connect_acl(hdev, dst, sec_level, auth_type);
-	case SCO_LINK:
-	case ESCO_LINK:
-		return hci_connect_sco(hdev, type, pkt_type, dst, sec_level, auth_type);
 	}
 
 	return ERR_PTR(-EINVAL);
