@@ -124,7 +124,7 @@
 
 static inline int current_has_network(void)
 {
-	return in_egroup_p(AID_INET) || capable(CAP_NET_RAW);
+	return in_egroup_p(make_kgid(current_cred()->user_ns, AID_INET)) || capable(CAP_NET_RAW);
 }
 #else
 static inline int current_has_network(void)
