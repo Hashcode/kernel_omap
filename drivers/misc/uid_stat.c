@@ -33,16 +33,16 @@ static struct proc_dir_entry *parent;
 
 struct uid_stat {
 	struct list_head link;
-	uid_t uid;
+	kuid_t uid;
 	atomic_t tcp_rcv;
 	atomic_t tcp_snd;
 };
 
-static struct uid_stat *find_uid_stat(uid_t uid) {
+static struct uid_stat *find_uid_stat(kuid_t uid) {
 	struct uid_stat *entry;
 
 	list_for_each_entry(entry, &uid_list, link) {
-		if (entry->uid == uid) {
+		if (uid_eq(entry->uid, uid)) {
 			return entry;
 		}
 	}
@@ -71,7 +71,7 @@ static const struct file_operations uid_stat_read_atomic_int_fops = {
 };
 
 /* Create a new entry for tracking the specified uid. */
-static struct uid_stat *create_stat(uid_t uid) {
+static struct uid_stat *create_stat(kuid_t uid) {
 	struct uid_stat *new_uid;
 	/* Create the uid stat struct and append it to the list. */
 	new_uid = kmalloc(sizeof(struct uid_stat), GFP_ATOMIC);
@@ -91,7 +91,7 @@ static void create_stat_proc(struct uid_stat *new_uid)
 {
 	char uid_s[32];
 	struct proc_dir_entry *entry;
-	sprintf(uid_s, "%d", new_uid->uid);
+	sprintf(uid_s, "%d", from_kuid(&init_user_ns, new_uid->uid));
 	entry = proc_mkdir(uid_s, parent);
 
 	/* Keep reference to uid_stat so we know what uid to read stats from. */
@@ -102,7 +102,7 @@ static void create_stat_proc(struct uid_stat *new_uid)
 			 &uid_stat_read_atomic_int_fops, &new_uid->tcp_rcv);
 }
 
-static struct uid_stat *find_or_create_uid_stat(uid_t uid)
+static struct uid_stat *find_or_create_uid_stat(kuid_t uid)
 {
 	struct uid_stat *entry;
 	unsigned long flags;
@@ -119,7 +119,7 @@ static struct uid_stat *find_or_create_uid_stat(uid_t uid)
 	return entry;
 }
 
-int uid_stat_tcp_snd(uid_t uid, int size) {
+int uid_stat_tcp_snd(kuid_t uid, int size) {
 	struct uid_stat *entry;
 	activity_stats_update();
 	entry = find_or_create_uid_stat(uid);
@@ -129,7 +129,7 @@ int uid_stat_tcp_snd(uid_t uid, int size) {
 	return 0;
 }
 
-int uid_stat_tcp_rcv(uid_t uid, int size) {
+int uid_stat_tcp_rcv(kuid_t uid, int size) {
 	struct uid_stat *entry;
 	activity_stats_update();
 	entry = find_or_create_uid_stat(uid);
