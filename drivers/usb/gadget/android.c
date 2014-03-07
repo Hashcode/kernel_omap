@@ -255,8 +255,12 @@ static void ffs_function_disable(struct android_usb_function *f)
 static int ffs_function_bind_config(struct android_usb_function *f,
 				    struct usb_configuration *c)
 {
+/*FIXME: Needs to be re-implemented */
+	return -EINVAL;
+#if 0
 	struct functionfs_config *config = f->config;
 	return functionfs_bind_config(c->cdev, c, config->data);
+#endif
 }
 
 static ssize_t
@@ -311,6 +315,7 @@ static struct android_usb_function ffs_function = {
 	.attributes	= ffs_function_attributes,
 };
 
+#if 0
 static int functionfs_ready_callback(struct ffs_data *ffs)
 {
 	struct android_dev *dev = _android_dev;
@@ -360,6 +365,7 @@ static void *functionfs_acquire_dev_callback(const char *dev_name)
 static void functionfs_release_dev_callback(struct ffs_data *ffs_data)
 {
 }
+#endif
 
 #define MAX_ACM_INSTANCES 4
 struct acm_function_config {
@@ -583,6 +589,9 @@ static int
 rndis_function_bind_config(struct android_usb_function *f,
 		struct usb_configuration *c)
 {
+/*FIXME: Needs to be re-implemented */
+	return -EINVAL;
+#if 0
 	int ret;
 	struct eth_dev *dev;
 	struct rndis_function_config *rndis = f->config;
@@ -619,6 +628,7 @@ rndis_function_bind_config(struct android_usb_function *f,
 
 	return rndis_bind_config_vendor(c, rndis->ethaddr, rndis->vendorID,
 					   rndis->manufacturer, rndis->dev);
+#endif
 }
 
 static void rndis_function_unbind_config(struct android_usb_function *f,
