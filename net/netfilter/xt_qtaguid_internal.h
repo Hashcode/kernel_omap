@@ -110,13 +110,13 @@ static inline int tag_compare(tag_t t1, tag_t t2)
 	return t1 < t2 ? -1 : t1 == t2 ? 0 : 1;
 }
 
-static inline tag_t combine_atag_with_uid(tag_t acct_tag, uid_t uid)
+static inline tag_t combine_atag_with_uid(tag_t acct_tag, kuid_t uid)
 {
-	return acct_tag | uid;
+	return acct_tag | from_kuid(&init_user_ns, uid);
 }
-static inline tag_t make_tag_from_uid(uid_t uid)
+static inline tag_t make_tag_from_uid(kuid_t uid)
 {
-	return uid;
+	return from_kuid(&init_user_ns, uid);
 }
 static inline uid_t get_uid_from_tag(tag_t tag)
 {
