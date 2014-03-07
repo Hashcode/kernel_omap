@@ -2113,9 +2113,10 @@ out_free_group_list:
 static int cgroup_allow_attach(struct cgroup *cgrp, struct cgroup_taskset *tset)
 {
 	struct cgroup_subsys *ss;
+	int i;
 	int ret;
 
-	for_each_subsys(cgrp->root, ss) {
+	for_each_subsys(ss, i) {
 		struct cgroup_subsys_state *css = cgroup_css(cgrp, ss);
 		if (ss->allow_attach) {
 			ret = ss->allow_attach(css, tset);
