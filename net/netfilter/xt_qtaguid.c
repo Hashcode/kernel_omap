@@ -957,6 +957,9 @@ static void iface_stat_create(struct net_device *net_dev,
 
 	ifname = net_dev->name;
 	if (!ifa) {
+printk(KERN_ERR "*** %s::SKIPPING BLANK INTERFACE!!\n", __func__);
+// FIXME HASH: getting alignment errors on a no-name 2nd interface
+#if 0
 		in_dev = in_dev_get(net_dev);
 		if (!in_dev) {
 			pr_err("qtaguid: iface_stat: create(%s): no inet dev\n",
@@ -972,7 +975,9 @@ static void iface_stat_create(struct net_device *net_dev,
 				 ifa->ifa_label ? ifa->ifa_label : "(null)");
 			if (ifa->ifa_label && !strcmp(ifname, ifa->ifa_label))
 				break;
+
 		}
+#endif
 	}
 
 	if (!ifa) {
