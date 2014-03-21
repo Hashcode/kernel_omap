@@ -828,6 +828,11 @@ static int evdev_handle_mt_request(struct input_dev *dev,
 	return 0;
 }
 
+/*
+ * HACK: disable conflicting EVIOCREVOKE until Android userspace stops using
+ * EVIOCSSUSPENDBLOCK
+ */
+/*
 static int evdev_revoke(struct evdev *evdev, struct evdev_client *client,
 			struct file *file)
 {
@@ -838,6 +843,7 @@ static int evdev_revoke(struct evdev *evdev, struct evdev_client *client,
 
 	return 0;
 }
+*/
 
 static int evdev_enable_suspend_block(struct evdev *evdev,
 				      struct evdev_client *client)
@@ -930,12 +936,17 @@ static long evdev_do_ioctl(struct file *file, unsigned int cmd,
 		else
 			return evdev_ungrab(evdev, client);
 
+	/*
+	 * HACK: disable conflicting EVIOCREVOKE until Android userspace stops
+	 * using EVIOCSSUSPENDBLOCK
+	 */
+	/*
 	case EVIOCREVOKE:
 		if (p)
 			return -EINVAL;
 		else
 			return evdev_revoke(evdev, client, file);
-
+	*/
 	case EVIOCSCLOCKID:
 		if (copy_from_user(&i, p, sizeof(unsigned int)))
 			return -EFAULT;
