@@ -206,25 +206,60 @@ static void android_disable(struct android_dev *dev)
 /*-------------------------------------------------------------------------*/
 /* Supported functions initialization */
 
+static void *functionfs_acquire_dev(struct ffs_dev *dev);
+static void functionfs_release_dev(struct ffs_dev *dev);
+static int functionfs_ready_callback(struct ffs_data *ffs);
+static void functionfs_closed_callback(struct ffs_data *ffs);
+
 struct functionfs_config {
 	bool opened;
 	bool enabled;
 	struct ffs_data *data;
+	struct usb_function_instance *fi_ffs;
+	struct usb_function *f_ffs;
 };
 
 static int ffs_function_init(struct android_usb_function *f,
 			     struct usb_composite_dev *cdev)
 {
-	f->config = kzalloc(sizeof(struct functionfs_config), GFP_KERNEL);
-	if (!f->config)
+	struct functionfs_config *config;
+	struct f_fs_opts *opts;
+	int ret;
+
+	config = kzalloc(sizeof(struct functionfs_config), GFP_KERNEL);
+	if (!config)
 		return -ENOMEM;
 
-	return functionfs_init();
+	f->config = config;
+	config->fi_ffs = usb_get_function_instance("ffs");
+	if (IS_ERR(config->fi_ffs)) {
+		ret = PTR_ERR(config->fi_ffs);
+		goto err_ffs_get_function_instance;
+	}
+	opts = to_f_fs_opts(config->fi_ffs);
+	ret = ffs_single_dev(opts->dev);
+	if (ret)
+		goto err_ffs_get_function_instance;
+
+	opts->dev->ffs_ready_callback = functionfs_ready_callback;
+	opts->dev->ffs_closed_callback = functionfs_closed_callback;
+	opts->dev->ffs_acquire_dev_callback = functionfs_acquire_dev;
+	opts->dev->ffs_release_dev_callback = functionfs_release_dev;
+	opts->no_configfs = true;
+	return 0;
+
+err_ffs_get_function_instance:
+	usb_put_function_instance(config->fi_ffs);
+	kfree(f->config);
+	return ret;
 }
 
 static void ffs_function_cleanup(struct android_usb_function *f)
 {
-	functionfs_cleanup();
+	struct functionfs_config *config = f->config;
+
+	usb_put_function(config->f_ffs);
+
 	kfree(f->config);
 }
 
@@ -255,12 +290,27 @@ static void ffs_function_disable(struct android_usb_function *f)
 static int ffs_function_bind_config(struct android_usb_function *f,
 				    struct usb_configuration *c)
 {
-/*FIXME: Needs to be re-implemented */
-	return -EINVAL;
-#if 0
+	int ret;
 	struct functionfs_config *config = f->config;
-	return functionfs_bind_config(c->cdev, c, config->data);
-#endif
+
+	config->f_ffs = usb_get_function(config->fi_ffs);
+	if (IS_ERR(config->f_ffs)) {
+		ret = PTR_ERR(config->f_ffs);
+		goto error;
+	}
+	ret = usb_add_function(c, config->f_ffs);
+	if (ret < 0) {
+		goto error;
+	}
+	if (c->next_interface_id < ARRAY_SIZE(c->interface))
+		c->interface[c->next_interface_id] = NULL;
+
+	return 0;
+error:
+	if (!IS_ERR(config->f_ffs))
+		usb_remove_function(c, config->f_ffs);
+	usb_put_function(config->f_ffs);
+	return ret;
 }
 
 static ssize_t
@@ -315,7 +365,6 @@ static struct android_usb_function ffs_function = {
 	.attributes	= ffs_function_attributes,
 };
 
-#if 0
 static int functionfs_ready_callback(struct ffs_data *ffs)
 {
 	struct android_dev *dev = _android_dev;
@@ -324,7 +373,7 @@ static int functionfs_ready_callback(struct ffs_data *ffs)
 
 	mutex_lock(&dev->mutex);
 
-	ret = functionfs_bind(ffs, dev->cdev);
+//	ret = functionfs_bind(ffs, dev->cdev);
 	if (ret)
 		goto err;
 
@@ -352,20 +401,19 @@ static void functionfs_closed_callback(struct ffs_data *ffs)
 	config->opened = false;
 	config->data = NULL;
 
-	functionfs_unbind(ffs);
+//	functionfs_unbind(ffs);
 
 	mutex_unlock(&dev->mutex);
 }
 
-static void *functionfs_acquire_dev_callback(const char *dev_name)
+static void *functionfs_acquire_dev(struct ffs_dev *dev)
 {
 	return 0;
 }
 
-static void functionfs_release_dev_callback(struct ffs_data *ffs_data)
+static void functionfs_release_dev(struct ffs_dev *dev)
 {
 }
-#endif
 
 #define MAX_ACM_INSTANCES 4
 struct acm_function_config {
@@ -955,7 +1003,8 @@ static struct android_usb_function *supported_functions[] = {
 	&mtp_function,
 	&ptp_function,
 	&rndis_function,
-	&mass_storage_function,
+// HASH: FIXME
+//	&mass_storage_function,
 	&accessory_function,
 	&audio_source_function,
 	NULL
