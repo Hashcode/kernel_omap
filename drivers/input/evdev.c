@@ -379,6 +379,7 @@ static int evdev_release(struct inode *inode, struct file *file)
 	mutex_unlock(&evdev->mutex);
 
 	evdev_detach_client(evdev, client);
+
 	if (client->use_wake_lock)
 		wake_lock_destroy(&client->wake_lock);
 
@@ -386,6 +387,7 @@ static int evdev_release(struct inode *inode, struct file *file)
 		vfree(client);
 	else
 		kfree(client);
+	kfree(client);
 
 	evdev_close_device(evdev);
 

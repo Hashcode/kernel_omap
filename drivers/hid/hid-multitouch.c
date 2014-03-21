@@ -940,7 +940,6 @@ static int mt_input_configured(struct hid_device *hdev, struct hid_input *hi)
 			hi->input->name = name;
 		}
 	}
-
 	return ret;
 }
 

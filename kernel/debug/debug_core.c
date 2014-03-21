@@ -692,7 +692,6 @@ kgdb_handle_exception(int evector, int signo, int ecode, struct pt_regs *regs)
 		return 1;
 
 	memset(ks, 0, sizeof(struct kgdb_state));
-
 	ks->cpu			= raw_smp_processor_id();
 	ks->ex_vector		= evector;
 	ks->signo		= signo;
