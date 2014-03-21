@@ -7,7 +7,45 @@
  */
 /dts-v1/;
 
-#include "omap443x.dtsi"
+#include "omap4.dtsi"
+
+/ {
+	cpus {
+		cpu0: cpu@0 {
+			/* OMAP443x variants OPP50-OPPNT */
+			operating-points = <
+				/* kHz    uV */
+				300000  1025000
+				600000  1200000
+				800000  1313000
+				1008000 1375000
+			>;
+			clock-latency = <300000>; /* From legacy driver */
+
+			/* cooling options */
+			cooling-min-level = <0>;
+			cooling-max-level = <3>;
+			#cooling-cells = <2>; /* min followed by max */
+		};
+	};
+
+	thermal-zones {
+		#include "omap4-cpu-thermal.dtsi"
+	};
+
+	ocp {
+		bandgap: bandgap {
+			reg = <0x4a002260 0x4
+			       0x4a00232C 0x4>;
+			compatible = "ti,omap4430-bandgap";
+
+			#thermal-sensor-cells = <0>;
+		};
+	};
+};
+
+/include/ "omap443x-clocks.dtsi"
+
 #include "elpida_ecb240abacn.dtsi"
 
 / {
@@ -21,22 +59,17 @@
 
 	pwmleds {
 		compatible = "pwm-leds";
-		charging {
+		charging_green {
 			label = "omap4:green:chrg";
 			pwms = <&twl_pwmled 0 7812500>;
 			max-brightness = <255>;
 		};
-	};
 
-	backlight {
-		compatible = "pwm-backlight";
-		pwms = <&twl_pwm 1 7812500>;
-		brightness-levels = <
-				0 10 20 30 40
-				50 60 70 80 90
-				100 110 120 127
-				>;
-		default-brightness-level = <13>;
+		charging_orange {
+			label = "omap4:orange:chrg";
+			pwms = <&twl_pwmled 1 7812500>;
+			max-brightness = <255>;
+		};
 	};
 
 	/* regulator for wl12xx on sdio5 */
@@ -58,6 +91,17 @@
 	pinctrl-0 = <
 			&mcbsp1_pins
 			&mcbsp2_pins
+			&mcbsp4_pins
+			&dmtimer10_pins
+			&hsusbb1_pins
+			&mcpdm_pins
+			&hsdet_pins
+			&dmic_pins
+			&dss_dpi_pins
+			&mbid_pins
+			&panelid_pins
+			&touchid_pins
+			&smb347_pins
 	>;
 
 	uart2_pins: pinmux_uart2_pins {
@@ -75,13 +119,6 @@
 			0x102 (PIN_OUTPUT | MUX_MODE0)		/* uart3_rts_sd.uart3_rts_sd */
 			0x104 (PIN_INPUT | MUX_MODE0)		/* uart3_rx_irrx.uart3_rx_irrx */
 			0x106 (PIN_OUTPUT | MUX_MODE0)		/* uart3_tx_irtx.uart3_tx_irtx */
-		>;
-	};
-
-	uart4_pins: pinmux_uart4_pins {
-		pinctrl-single,pins = <
-			0x11c (PIN_INPUT | MUX_MODE0)		/* uart4_rx.uart4_rx */
-			0x11e (PIN_OUTPUT | MUX_MODE0)		/* uart4_tx.uart4_tx */
 		>;
 	};
 
@@ -159,6 +196,125 @@
 			0x112 (PIN_INPUT_PULLUP | MUX_MODE0)	/* sdmmc5_dat3.sdmmc5_dat3 */
 		>;
 	};
+
+	mcbsp4_pins: pinmux_mcbsp4_pins {
+		pinctrl-single,pins = <
+			0x88 (PIN_INPUT		 | MUX_MODE2)	/* usbb1_ulpitll_nxt.mcbsp4_fsx */
+			0x8a (PIN_INPUT		 | MUX_MODE2)	/* usbb1_ulpitll_dat0.mcbsp4_clkx */
+			0x8c (PIN_OUTPUT 	 | MUX_MODE2)	/* usbb1_ulpitll_dat1.mcbsp4_dx */
+			0x8e (PIN_INPUT		 | MUX_MODE2)	/* usbb1_ulpitll_dat2.mcbsp4_dr */
+		>;
+	};
+
+	dmtimer10_pins: pinmux_dmtimer10_pins {
+		pinctrl-single,pins = <
+			0x96 (PIN_OUTPUT	 | MUX_MODE1)	/* usbb1_ulpitll_dat6.dmtimer10_pwm_evt */
+		>;
+	};
+
+	hsusbb1_pins: pinmux_hsusbb1_pins {
+		pinctrl-single,pins = <
+			0x80 (PIN_OUTPUT 	 | MUX_MODE3)	/* cam_globalreset.gpio_83 */
+			0x82 (PIN_INPUT_PULLDOWN | MUX_MODE3)	/* usbb1_ulpitll_clk.gpio_84 */
+			0x84 (PIN_OUTPUT 	 | MUX_MODE3)	/* usbb1_ulpitll_stp.gpio_85 */
+			0x86 (PIN_INPUT_PULLDOWN | MUX_MODE3)	/* usbb1_ulpitll_dir.gpio_86 */
+			0x90 (PIN_INPUT		 | MUX_MODE1)	/* usbb1_ulpitll_dat3.hsi1_caready */
+			0x92 (PIN_INPUT_PULLDOWN | MUX_MODE3)	/* usbb1_ulpitll_dat4.gpio_92 */
+			0x94 (PIN_INPUT_PULLDOWN | MUX_MODE3)	/* usbb1_ulpitll_dat5.gpio_93 */
+			0x98 (PIN_INPUT_PULLDOWN | MUX_MODE4)	/* usbb1_ulpitll_dat7.usbb1_ulpiphy_dat7 */
+		>;
+	};
+
+	mcpdm_pins: pinmux_mcpdm_pins {
+		pinctrl-single,pins = <
+			0xc6 (PIN_INPUT		 | MUX_MODE1)	/* abe_pdm_ul_data.abe_mcbsp3_dr */
+			0xc8 (PIN_OUTPUT	 | MUX_MODE1)	/* abe_pdm_dl_data.abe_mcbsp3_dx */
+			0xca (PIN_INPUT		 | MUX_MODE1)	/* abe_pdm_frame.abe_mcbsp3_clkx */
+			0xcc (PIN_INPUT		 | MUX_MODE1)	/* abe_pdm_lb_clk.abe_mcbsp3_fsx */
+			0xce (PIN_INPUT_PULLDOWN | MUX_MODE0)	/* abe_clks.abe_clks */
+		>;
+	};
+
+	hsdet_pins: pinmux_hsdet_pins {
+		pinctrl-single,pins = <
+			0x32 (PIN_INPUT_PULLUP | MUX_MODE3)	/* gpmc_a25.gpio_49 */
+		>;
+	};
+
+	dmic_pins: pinmux_dmic_pins {
+		pinctrl-single,pins = <
+			0xd0 (PIN_OUTPUT | MUX_MODE3)		/* abe_dmic_clk1.gpio_119 */
+			0xd2 (PIN_OUTPUT | MUX_MODE3)		/* abe_dmic_din1.gpio_120 */
+			0xd4 (PIN_OUTPUT | MUX_MODE3)		/* abe_dmic_din2.gpio_121 */
+			0xd6 (PIN_INPUT | MUX_MODE0)		/* abe_dmic_din3.abe_dmic_din3 */
+		>;
+	};
+
+	dss_dpi_pins: pinmux_dss_dpi_pins {
+		pinctrl-single,pins = <
+			0x122 (PIN_OUTPUT | MUX_MODE5)	/* dispc2_data23 */
+			0x124 (PIN_OUTPUT | MUX_MODE5) 	/* dispc2_data22 */
+			0x126 (PIN_OUTPUT | MUX_MODE5)	/* dispc2_data21 */
+			0x128 (PIN_OUTPUT | MUX_MODE5)	/* dispc2_data20 */
+			0x12a (PIN_OUTPUT | MUX_MODE5)	/* dispc2_data19 */
+			0x12c (PIN_OUTPUT | MUX_MODE5)	/* dispc2_data18 */
+			0x12e (PIN_OUTPUT | MUX_MODE5)	/* dispc2_data15 */
+			0x130 (PIN_OUTPUT | MUX_MODE5)	/* dispc2_data14 */
+			0x132 (PIN_OUTPUT | MUX_MODE5)	/* dispc2_data13 */
+			0x134 (PIN_OUTPUT | MUX_MODE5)	/* dispc2_data12 */
+			0x136 (PIN_OUTPUT | MUX_MODE5)	/* dispc2_data11 */
+
+			0x174 (PIN_OUTPUT | MUX_MODE5)	/* dispc2_data10 */
+			0x176 (PIN_OUTPUT | MUX_MODE5)	/* dispc2_data9 */
+			0x178 (PIN_OUTPUT | MUX_MODE5)	/* dispc2_data16 */
+			0x17a (PIN_OUTPUT | MUX_MODE5)	/* dispc2_data17 */
+			0x17c (PIN_OUTPUT | MUX_MODE5)	/* dispc2_hsync */
+			0x17e (PIN_OUTPUT | MUX_MODE5)	/* dispc2_pclk */
+			0x180 (PIN_OUTPUT | MUX_MODE5)	/* dispc2_vsync */
+			0x182 (PIN_OUTPUT | MUX_MODE5)	/* dispc2_de */
+			0x184 (PIN_OUTPUT | MUX_MODE5)	/* dispc2_data8 */
+			0x186 (PIN_OUTPUT | MUX_MODE5)	/* dispc2_data7 */
+			0x188 (PIN_OUTPUT | MUX_MODE5)	/* dispc2_data6 */
+			0x18a (PIN_OUTPUT | MUX_MODE5)	/* dispc2_data5 */
+			0x18c (PIN_OUTPUT | MUX_MODE5)	/* dispc2_data4 */
+			0x18e (PIN_OUTPUT | MUX_MODE5)	/* dispc2_data3 */
+
+			0x190 (PIN_OUTPUT | MUX_MODE5)	/* dispc2_data2 */
+			0x192 (PIN_OUTPUT | MUX_MODE5)	/* dispc2_data1 */
+			0x194 (PIN_OUTPUT | MUX_MODE5)	/* dispc2_data0 */
+		>;
+	};
+
+	mbid_pins: pinmux_mbid_pins {
+		pinctrl-single,pins = <
+			0x140 (PIN_INPUT | MUX_MODE3)	/* kpd_col5.gpio_173 */
+			0x142 (PIN_INPUT | MUX_MODE3)	/* kpd_col0.gpio_174 */
+			0x14c (PIN_INPUT | MUX_MODE3)	/* kpd_row5.gpio_177 */
+			0x14e (PIN_INPUT | MUX_MODE3)	/* kpd_row0.gpio_178 */
+		>;
+	};
+
+	panelid_pins: pinmux_panelid_pins {
+		pinctrl-single,pins = <
+			0x148 (PIN_INPUT | MUX_MODE3)	/* kpd_row3.gpio_175 */
+			0x150 (PIN_INPUT | MUX_MODE3)	/* kpd_row4.gpio_176 */
+		>;
+	};
+
+	touchid_pins: pinmux_touchid_pins {
+		pinctrl-single,pins = <
+			0x34 (PIN_INPUT | MUX_MODE3)	/* gpmc_ncs0.gpio_50 */
+			0x36 (PIN_INPUT | MUX_MODE3)	/* gpmc_ncs1.gpio_51 */
+		>;
+	};
+
+	smb347_pins: pinmux_smb347_pins {
+		pinctrl-single,pins = <
+			0x50 (PIN_OUTPUT | MUX_MODE3)	/* gpmc_ncs4.gpio_101 */
+			0x11c (PIN_OUTPUT | PIN_OFF_OUTPUT_HIGH | MUX_MODE3)	/* uart4_rx.gpio_155 */
+		>;
+	};
+
 };
 
 &i2c1 {
@@ -176,7 +332,37 @@
 };
 
 #include "twl6030.dtsi"
-#include "twl6030_omap4.dtsi"
+
+&twl {
+	/*
+	 * On most OMAP4 platforms, the twl6030 IRQ line is connected
+	 * to the SYS_NIRQ1 line on OMAP and the twl6030 MSECURE line is
+	 * connected to the fref_clk0_out.sys_drm_msecure line.
+	 * Therefore, configure the defaults for the SYS_NIRQ1 and
+	 * fref_clk0_out.sys_drm_msecure pins here.
+	 */
+	pinctrl-names = "default";
+	pinctrl-0 = <
+		&twl6030_pins
+		&twl6030_wkup_pins
+	>;
+};
+
+&omap4_pmx_wkup {
+	twl6030_wkup_pins: pinmux_twl6030_wkup_pins {
+		pinctrl-single,pins = <
+			0x14 (PIN_OUTPUT | MUX_MODE3)		/* fref_clk0_out.gpio_wk6 */
+		>;
+	};
+};
+
+&omap4_pmx_core {
+	twl6030_pins: pinmux_twl6030_pins {
+		pinctrl-single,pins = <
+			0x15e (WAKEUP_EN | PIN_INPUT_PULLUP | MUX_MODE0)	/* sys_nirq1.sys_nirq1 */
+		>;
+	};
+};
 
 &i2c2 {
 	pinctrl-names = "default";
@@ -249,11 +435,6 @@
 &uart3 {
 	pinctrl-names = "default";
 	pinctrl-0 = <&uart3_pins>;
-};
-
-&uart4 {
-	pinctrl-names = "default";
-	pinctrl-0 = <&uart4_pins>;
 };
 
 &mcbsp3 {
