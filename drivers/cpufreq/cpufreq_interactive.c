@@ -142,6 +142,7 @@ static inline cputime64_t get_cpu_idle_time_jiffy(unsigned int cpu,
 	return jiffies_to_usecs(idle_time);
 }
 
+#if 0
 static inline cputime64_t get_cpu_idle_time(
 	unsigned int cpu,
 	cputime64_t *wall,
@@ -156,6 +157,7 @@ static inline cputime64_t get_cpu_idle_time(
 
 	return idle_time;
 }
+#endif
 
 static void cpufreq_interactive_timer_resched(
 	struct cpufreq_interactive_cpuinfo *pcpu)
