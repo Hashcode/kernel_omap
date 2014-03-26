@@ -390,6 +390,14 @@
 	pinctrl-0 = <&mcspi1_pins>;
 };
 
+&gpio2 {
+	ti,no-reset-on-init;
+};
+
+&timer10 {
+	ti,no-reset-on-init;
+};
+
 &mmc1 {
 	status = "disabled";
 };
