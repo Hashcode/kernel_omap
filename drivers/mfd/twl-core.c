@@ -852,6 +852,13 @@ add_children(struct twl4030_platform_data *pdata, unsigned irq_base,
 			return PTR_ERR(child);
 	}
 
+	if (IS_ENABLED(CONFIG_INPUT_TWL6030_PWRBUTTON) && twl_class_is_6030()) {
+		child = add_child(TWL_MODULE_PM_MASTER, "twl6030_pwrbutton",
+				  NULL, 0, true, irq_base, 0);
+		if (IS_ERR(child))
+			return PTR_ERR(child);
+	}
+
 	if (IS_ENABLED(CONFIG_MFD_TWL4030_AUDIO) && pdata->audio &&
 	    twl_class_is_4030()) {
 		child = add_child(TWL4030_MODULE_AUDIO_VOICE, "twl4030-audio",
