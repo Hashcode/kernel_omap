@@ -103,4 +103,9 @@
 		compatible = "ti,twl6030-pwmled";
 		#pwm-cells = <2>;
 	};
+
+	twl_pwrbutton: pwrbutton {
+		compatible = "ti,twl6030-pwrbutton";
+		interrupts = <0>;
+	};
 };
