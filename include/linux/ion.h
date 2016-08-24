@@ -221,6 +221,17 @@ struct sg_table *ion_sg_table(struct ion_client *client,
 			      struct ion_handle *handle);
 
 /**
+ * ion_map_dma - return an sg_table describing a handle
+ * @client:	the client
+ * @handle:	the handle
+ *
+ * This function returns the sg_table describing
+ * a particular ion handle.
+ */
+struct sg_table *ion_sg_table(struct ion_client *client,
+			      struct ion_handle *handle);
+
+/**
  * ion_map_kernel - create mapping for the given handle
  * @client:	the client
  * @handle:	handle to map

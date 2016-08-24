@@ -5105,11 +5105,6 @@ static void __setup_per_zone_wmarks(void)
 					low + (min >> 2);
 		zone->watermark[WMARK_HIGH] = min_wmark_pages(zone) +
 					low + (min >> 1);
-
-		zone->watermark[WMARK_MIN] += cma_wmark_pages(zone);
-		zone->watermark[WMARK_LOW] += cma_wmark_pages(zone);
-		zone->watermark[WMARK_HIGH] += cma_wmark_pages(zone);
-
 		setup_zone_migrate_reserve(zone);
 		spin_unlock_irqrestore(&zone->lock, flags);
 	}

@@ -35,6 +35,7 @@
 #include <linux/slab.h>
 #include <linux/delay.h>
 #include <linux/power_supply.h>
+#include <linux/wakelock.h>
 #ifdef CONFIG_MACH_OMAP4_BOWSER
 #include <linux/workqueue.h>
 #include <plat/usb.h>

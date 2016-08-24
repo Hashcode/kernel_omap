@@ -110,6 +110,9 @@ struct frag_hdr {
 
 #define	IP6_MF	0x0001
 
+#define IP6_REPLY_MARK(net, mark) \
+	((net)->ipv6.sysctl.fwmark_reflect ? (mark) : 0)
+
 #include <net/sock.h>
 
 /* sysctls */
@@ -200,6 +203,7 @@ extern rwlock_t ip6_ra_lock;
  */
 
 struct ipv6_txoptions {
+	atomic_t		refcnt;
 	/* Length of this structure */
 	int			tot_len;
 
@@ -212,7 +216,7 @@ struct ipv6_txoptions {
 	struct ipv6_opt_hdr	*dst0opt;
 	struct ipv6_rt_hdr	*srcrt;	/* Routing Header */
 	struct ipv6_opt_hdr	*dst1opt;
-
+	struct rcu_head		rcu;
 	/* Option buffer, as read by IPV6_PKTOPTIONS, starts here. */
 };
 
@@ -238,6 +242,24 @@ struct ipv6_fl_socklist {
 	struct ip6_flowlabel	*fl;
 };
 
+static inline struct ipv6_txoptions *txopt_get(const struct ipv6_pinfo *np)
+{
+	struct ipv6_txoptions *opt;
+
+	rcu_read_lock();
+	opt = rcu_dereference(np->opt);
+	if (opt && !atomic_inc_not_zero(&opt->refcnt))
+		opt = NULL;
+	rcu_read_unlock();
+	return opt;
+}
+
+static inline void txopt_put(struct ipv6_txoptions *opt)
+{
+	if (opt && atomic_dec_and_test(&opt->refcnt))
+		kfree_rcu(opt, rcu);
+}
+
 extern struct ip6_flowlabel	*fl6_sock_lookup(struct sock *sk, __be32 label);
 extern struct ipv6_txoptions	*fl6_merge_options(struct ipv6_txoptions * opt_space,
 						   struct ip6_flowlabel * fl,
@@ -252,6 +274,14 @@ static inline void fl6_sock_release(struct ip6_flowlabel *fl)
 	if (fl)
 		atomic_dec(&fl->users);
 }
+
+extern void icmpv6_notify(struct sk_buff *skb, u8 type, u8 code, __be32 info);
+
+int icmpv6_push_pending_frames(struct sock *sk, struct flowi6 *fl6,
+			       struct icmp6hdr *thdr, int len);
+
+struct dst_entry *icmpv6_route_lookup(struct net *net, struct sk_buff *skb,
+				      struct sock *sk, struct flowi6 *fl6);
 
 extern int 			ip6_ra_control(struct sock *sk, int sel);
 
@@ -293,6 +323,18 @@ static inline int __ipv6_addr_src_scope(int type)
 static inline int ipv6_addr_src_scope(const struct in6_addr *addr)
 {
 	return __ipv6_addr_src_scope(__ipv6_addr_type(addr));
+}
+
+static inline bool __ipv6_addr_needs_scope_id(int type)
+{
+	return type & IPV6_ADDR_LINKLOCAL ||
+	       (type & IPV6_ADDR_MULTICAST &&
+		(type & (IPV6_ADDR_LOOPBACK|IPV6_ADDR_LINKLOCAL)));
+}
+
+static inline __u32 ipv6_iface_scope_id(const struct in6_addr *addr, int iface)
+{
+	return __ipv6_addr_needs_scope_id(__ipv6_addr_type(addr)) ? iface : 0;
 }
 
 static inline int ipv6_addr_cmp(const struct in6_addr *a1, const struct in6_addr *a2)

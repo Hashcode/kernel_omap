@@ -161,10 +161,12 @@ struct ipv6_devconf {
 	__s32		accept_ra_rt_info_max_plen;
 #endif
 #endif
+	__s32		accept_ra_rt_table;
 	__s32		proxy_ndp;
 	__s32		accept_source_route;
 #ifdef CONFIG_IPV6_OPTIMISTIC_DAD
 	__s32		optimistic_dad;
+	__s32		use_optimistic;
 #endif
 #ifdef CONFIG_IPV6_MROUTE
 	__s32		mc_forwarding;
@@ -172,6 +174,7 @@ struct ipv6_devconf {
 	__s32		disable_ipv6;
 	__s32		accept_dad;
 	__s32		force_tllao;
+	__s32		use_oif_addrs_only;
 	void		*sysctl;
 };
 
@@ -213,6 +216,9 @@ enum {
 	DEVCONF_DISABLE_IPV6,
 	DEVCONF_ACCEPT_DAD,
 	DEVCONF_FORCE_TLLAO,
+	DEVCONF_ACCEPT_RA_RT_TABLE,
+	DEVCONF_USE_OPTIMISTIC,
+	DEVCONF_USE_OIF_ADDRS_ONLY,
 	DEVCONF_MAX
 };
 
@@ -375,7 +381,7 @@ struct ipv6_pinfo {
 	struct ipv6_ac_socklist	*ipv6_ac_list;
 	struct ipv6_fl_socklist *ipv6_fl_list;
 
-	struct ipv6_txoptions	*opt;
+	struct ipv6_txoptions __rcu	*opt;
 	struct sk_buff		*pktoptions;
 	struct sk_buff		*rxpmtu;
 	struct {

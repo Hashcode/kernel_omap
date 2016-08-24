@@ -46,7 +46,8 @@ static struct alarm_base {
 static ktime_t freezer_delta;
 static DEFINE_SPINLOCK(freezer_delta_lock);
 
-static struct wake_lock suspend_alarm_lock;
+static struct wakeup_source *ws;
+
 #ifdef CONFIG_RTC_CLASS
 /* rtc timer and device for setting alarm wakeups at suspend */
 static struct rtc_timer		rtctimer;
@@ -225,7 +226,6 @@ static int alarmtimer_suspend(struct device *dev)
 	int i;
 	int ret;
 
-
 	spin_lock_irqsave(&freezer_delta_lock, flags);
 	min = freezer_delta;
 	freezer_delta = ktime_set(0, 0);
@@ -256,8 +256,7 @@ static int alarmtimer_suspend(struct device *dev)
 		return 0;
 
 	if (ktime_to_ns(min) < 2 * NSEC_PER_SEC) {
-		wake_lock_timeout(&suspend_alarm_lock,
-				  msecs_to_jiffies(2 * MSEC_PER_SEC));
+		__pm_wakeup_event(ws, 2 * MSEC_PER_SEC);
 		return -EBUSY;
 	}
 
@@ -267,12 +266,11 @@ static int alarmtimer_suspend(struct device *dev)
 	now = rtc_tm_to_ktime(tm);
 	now = ktime_add(now, min);
 
+	/* Set alarm, if in the past reject suspend briefly to handle */
 	ret = rtc_timer_start(rtc, &rtctimer, now, ktime_set(0, 0));
 	if (ret < 0)
-		wake_lock_timeout(&suspend_alarm_lock,
-				  msecs_to_jiffies(MSEC_PER_SEC));
-
-	return 0;
+		__pm_wakeup_event(ws, 1 * MSEC_PER_SEC);
+	return ret;
 }
 #else
 static int alarmtimer_suspend(struct device *dev)
@@ -829,7 +827,7 @@ static int __init alarmtimer_init(void)
 		error = PTR_ERR(pdev);
 		goto out_drv;
 	}
-	wake_lock_init(&suspend_alarm_lock, WAKE_LOCK_SUSPEND, "alarmtimer");
+	ws = wakeup_source_register("alarmtimer");
 	return 0;
 
 out_drv:

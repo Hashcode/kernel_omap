@@ -49,6 +49,7 @@
 #include <net/udplite.h>
 #include <net/tcp.h>
 #include <net/ipip.h>
+#include <net/ping.h>
 #include <net/protocol.h>
 #include <net/inet_common.h>
 #include <net/route.h>
@@ -447,8 +448,11 @@ void inet6_destroy_sock(struct sock *sk)
 
 	/* Free tx options */
 
-	if ((opt = xchg(&np->opt, NULL)) != NULL)
-		sock_kfree_s(sk, opt, opt->tot_len);
+	opt = xchg((__force struct ipv6_txoptions **)&np->opt, NULL);
+	if (opt) {
+		atomic_sub(opt->tot_len, &sk->sk_omem_alloc);
+		txopt_put(opt);
+	}
 }
 
 EXPORT_SYMBOL_GPL(inet6_destroy_sock);
@@ -701,9 +705,13 @@ int inet6_sk_rebuild_header(struct sock *sk)
 		fl6.flowi6_mark = sk->sk_mark;
 		fl6.fl6_dport = inet->inet_dport;
 		fl6.fl6_sport = inet->inet_sport;
+		fl6.flowi6_uid = sock_i_uid(sk);
 		security_sk_classify_flow(sk, flowi6_to_flowi(&fl6));
 
-		final_p = fl6_update_dst(&fl6, np->opt, &final);
+		rcu_read_lock();
+		final_p = fl6_update_dst(&fl6, rcu_dereference(np->opt),
+					 &final);
+		rcu_read_unlock();
 
 		dst = ip6_dst_lookup_flow(sk, &fl6, final_p, false);
 		if (IS_ERR(dst)) {
@@ -1130,6 +1138,9 @@ static int __init inet6_init(void)
 	if (err)
 		goto out_unregister_udplite_proto;
 
+	err = proto_register(&pingv6_prot, 1);
+	if (err)
+		goto out_unregister_ping_proto;
 
 	/* We MUST register RAW sockets before we create the ICMP6,
 	 * IGMP6, or NDISC control sockets.
@@ -1225,6 +1236,10 @@ static int __init inet6_init(void)
 	if (err)
 		goto ipv6_packet_fail;
 
+	err = pingv6_init();
+	if (err)
+		goto pingv6_fail;
+
 #ifdef CONFIG_SYSCTL
 	err = ipv6_sysctl_register();
 	if (err)
@@ -1237,6 +1252,8 @@ out:
 sysctl_fail:
 	ipv6_packet_cleanup();
 #endif
+pingv6_fail:
+	pingv6_exit();
 ipv6_packet_fail:
 	tcpv6_exit();
 tcpv6_fail:
@@ -1284,6 +1301,8 @@ static_sysctl_fail:
 	rtnl_unregister_all(PF_INET6);
 out_sock_register_fail:
 	rawv6_exit();
+out_unregister_ping_proto:
+	proto_unregister(&pingv6_prot);
 out_unregister_raw_proto:
 	proto_unregister(&rawv6_prot);
 out_unregister_udplite_proto:

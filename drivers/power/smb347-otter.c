@@ -25,6 +25,7 @@
 #include <linux/usb/musb-omap.h>
 #include <linux/power_supply.h>
 #include <linux/i2c/twl.h>
+#include <linux/wakelock.h>
 
 #include <asm/io.h>
 
